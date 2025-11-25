@@ -1,34 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Leaf, 
-  Bike, 
-  Recycle, 
-  Droplets, 
-  Zap, 
-  Award, 
-  TrendingUp, 
-  MapPin, 
-  Users, 
-  Calendar, 
-  Star,
-  ChevronDown,
-  ChevronUp,
-  Camera,
-  Video,
-  Map,
-  Upload,
-  Shield,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
-  School
+  Leaf, Bike, Recycle, Droplets, Zap, Award, TrendingUp, 
+  MapPin, Users, Calendar, Star, ChevronDown, ChevronUp,
+  Camera, Video, Map, Upload, Shield, CheckCircle, AlertTriangle,
+  Clock, School, Settings, Plus, Trash2, UserCheck, UserX,
+  Eye, EyeOff, Key, LogOut
 } from 'lucide-react';
 
 const App = () => {
+  // Admin state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const adminPasscode = "green2025"; // Change this to your desired password
+  
+  // Existing state from your original app
   const [selectedAction, setSelectedAction] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [userSchool, setUserSchool] = useState('Lincoln High School');
-  const [evidenceType, setEvidenceType] = useState('photo'); // 'photo' or 'video'
+  const [evidenceType, setEvidenceType] = useState('photo');
   const [evidenceFile, setEvidenceFile] = useState(null);
   const [evidencePreview, setEvidencePreview] = useState(null);
   const [locationCheckIn, setLocationCheckIn] = useState(false);
@@ -38,65 +27,37 @@ const App = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Mock data for schools
-  const schools = [
+  // Schools management
+  const [approvedSchools, setApprovedSchools] = useState([
     'Lincoln High School', 
     'Washington Academy', 
     'Roosevelt College Prep', 
     'Jefferson STEM School', 
     'Adams Environmental Institute'
-  ];
+  ]);
+  const [pendingSchools, setPendingSchools] = useState([]);
+  const [newSchoolName, setNewSchoolName] = useState('');
 
-  // Mock data for eco-actions with evidence requirements
+  // Competition management
+  const [currentCompetition, setCurrentCompetition] = useState({
+    name: "Fall 2025 Eco Challenge",
+    startDate: "2025-09-01",
+    endDate: "2025-12-15",
+    isActive: true
+  });
+  const [competitionName, setCompetitionName] = useState('');
+  const [competitionStart, setCompetitionStart] = useState('');
+  const [competitionEnd, setCompetitionEnd] = useState('');
+
+  // Existing eco-actions and leaderboard data
   const ecoActions = [
-    { 
-      id: 'biking', 
-      name: 'Biking to School', 
-      icon: Bike, 
-      co2Savings: 0.8, 
-      points: 15,
-      requiresLocation: true,
-      evidenceTypes: ['photo', 'video']
-    },
-    { 
-      id: 'recycling', 
-      name: 'Proper Recycling', 
-      icon: Recycle, 
-      co2Savings: 0.3, 
-      points: 8,
-      requiresLocation: false,
-      evidenceTypes: ['photo', 'video']
-    },
-    { 
-      id: 'water', 
-      name: 'Water Conservation Challenge', 
-      icon: Droplets, 
-      co2Savings: 0.2, 
-      points: 6,
-      requiresLocation: true,
-      evidenceTypes: ['photo', 'video']
-    },
-    { 
-      id: 'cleanup', 
-      name: 'Campus Clean-up', 
-      icon: Leaf, 
-      co2Savings: 0.5, 
-      points: 20,
-      requiresLocation: true,
-      evidenceTypes: ['photo', 'video']
-    },
-    { 
-      id: 'energy', 
-      name: 'Energy Saving Initiative', 
-      icon: Zap, 
-      co2Savings: 0.4, 
-      points: 12,
-      requiresLocation: true,
-      evidenceTypes: ['photo', 'video']
-    }
+    { id: 'biking', name: 'Biking to School', icon: Bike, co2Savings: 0.8, points: 15, requiresLocation: true, evidenceTypes: ['photo', 'video'] },
+    { id: 'recycling', name: 'Proper Recycling', icon: Recycle, co2Savings: 0.3, points: 8, requiresLocation: false, evidenceTypes: ['photo', 'video'] },
+    { id: 'water', name: 'Water Conservation Challenge', icon: Droplets, co2Savings: 0.2, points: 6, requiresLocation: true, evidenceTypes: ['photo', 'video'] },
+    { id: 'cleanup', name: 'Campus Clean-up', icon: Leaf, co2Savings: 0.5, points: 20, requiresLocation: true, evidenceTypes: ['photo', 'video'] },
+    { id: 'energy', name: 'Energy Saving Initiative', icon: Zap, co2Savings: 0.4, points: 12, requiresLocation: true, evidenceTypes: ['photo', 'video'] }
   ];
 
-  // Mock data for impact statistics
   const [impactStats, setImpactStats] = useState({
     totalActions: 2156,
     totalCO2Saved: 1247.3,
@@ -105,7 +66,6 @@ const App = () => {
     verifiedActions: 1982
   });
 
-  // Mock leaderboard data for schools
   const [leaderboard, setLeaderboard] = useState([
     { id: 1, name: 'Lincoln High School', points: 8420, actions: 623, students: 187, trend: 'up' },
     { id: 2, name: 'Jefferson STEM School', points: 7890, actions: 598, students: 156, trend: 'up' },
@@ -114,25 +74,114 @@ const App = () => {
     { id: 5, name: 'Adams Environmental Institute', points: 4320, actions: 321, students: 98, trend: 'down' }
   ]);
 
-  // Handle file upload
+  // Admin functions
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (adminPassword === adminPasscode) {
+      setIsAdmin(true);
+      setAdminPassword('');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdmin(false);
+  };
+
+  const addSchoolRequest = (e) => {
+    e.preventDefault();
+    if (newSchoolName && !pendingSchools.includes(newSchoolName) && !approvedSchools.includes(newSchoolName)) {
+      setPendingSchools(prev => [...prev, newSchoolName]);
+      setNewSchoolName('');
+    }
+  };
+
+  const approveSchool = (schoolName) => {
+    setApprovedSchools(prev => [...prev, schoolName]);
+    setPendingSchools(prev => prev.filter(s => s !== schoolName));
+    setLeaderboard(prev => [...prev, {
+      id: prev.length + 1,
+      name: schoolName,
+      points: 0,
+      actions: 0,
+      students: 0,
+      trend: 'neutral'
+    }]);
+  };
+
+  const rejectSchool = (schoolName) => {
+    setPendingSchools(prev => prev.filter(s => s !== schoolName));
+  };
+
+  const createNewCompetition = (e) => {
+    e.preventDefault();
+    if (competitionName && competitionStart && competitionEnd) {
+      // Reset all data for new competition
+      setSubmittedActions([]);
+      setImpactStats({
+        totalActions: 0,
+        totalCO2Saved: 0,
+        totalPoints: 0,
+        activeStudents: 0,
+        verifiedActions: 0
+      });
+      setLeaderboard(approvedSchools.map((school, index) => ({
+        id: index + 1,
+        name: school,
+        points: 0,
+        actions: 0,
+        students: 0,
+        trend: 'neutral'
+      })));
+      
+      setCurrentCompetition({
+        name: competitionName,
+        startDate: competitionStart,
+        endDate: competitionEnd,
+        isActive: true
+      });
+      
+      setCompetitionName('');
+      setCompetitionStart('');
+      setCompetitionEnd('');
+    }
+  };
+
+  const resetAllData = () => {
+    if (window.confirm('Are you sure you want to reset ALL competition data? This cannot be undone.')) {
+      setSubmittedActions([]);
+      setImpactStats({
+        totalActions: 0,
+        totalCO2Saved: 0,
+        totalPoints: 0,
+        activeStudents: 0,
+        verifiedActions: 0
+      });
+      setLeaderboard(approvedSchools.map((school, index) => ({
+        id: index + 1,
+        name: school,
+        points: 0,
+        actions: 0,
+        students: 0,
+        trend: 'neutral'
+      })));
+    }
+  };
+
+  // ... (keep all your existing functions: handleFileUpload, handleLocationCheckIn, simulateAIVerification, handleSubmitAction, getActionIcon)
+  
+  // Include all your existing functions here (I'm keeping them brief for space)
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       setEvidenceFile(file);
-      
-      // Create preview
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setEvidencePreview(e.target.result);
-      };
+      reader.onload = (e) => setEvidencePreview(e.target.result);
       reader.readAsDataURL(file);
     }
   };
 
-  // Simulate location check-in
   const handleLocationCheckIn = () => {
     setIsProcessing(true);
-    // Simulate GPS location fetching
     setTimeout(() => {
       setGpsLocation({
         lat: (40.7128 + (Math.random() - 0.5) * 0.1).toFixed(4),
@@ -142,25 +191,16 @@ const App = () => {
     }, 1500);
   };
 
-  // Simulate AI verification
-  const simulateAIVerification = () => {
-    // 90% chance of approval, 10% rejection for demo
-    return Math.random() > 0.1;
-  };
+  const simulateAIVerification = () => Math.random() > 0.1;
 
-  // Handle action submission
   const handleSubmitAction = (e) => {
     e.preventDefault();
     if (!selectedAction || quantity <= 0 || !evidenceFile) return;
-
     const action = ecoActions.find(a => a.id === selectedAction);
     if (action && (!action.requiresLocation || gpsLocation)) {
       setIsProcessing(true);
-      
-      // Simulate AI processing time
       setTimeout(() => {
         const isVerified = simulateAIVerification();
-        
         const newAction = {
           id: Date.now(),
           action: selectedAction,
@@ -173,10 +213,7 @@ const App = () => {
           evidenceVerified: isVerified,
           locationCheckIn: gpsLocation || null
         };
-
         setSubmittedActions(prev => [newAction, ...prev.slice(0, 4)]);
-        
-        // Update impact stats
         setImpactStats(prev => ({
           totalActions: prev.totalActions + newAction.quantity,
           totalCO2Saved: prev.totalCO2Saved + newAction.co2Saved,
@@ -184,22 +221,13 @@ const App = () => {
           activeStudents: isVerified ? prev.activeStudents + 1 : prev.activeStudents,
           verifiedActions: isVerified ? prev.verifiedActions + newAction.quantity : prev.verifiedActions
         }));
-
-        // Update leaderboard if verified
         if (isVerified) {
           setLeaderboard(prev => prev.map(item => 
             item.name === userSchool 
-              ? { 
-                  ...item, 
-                  points: item.points + newAction.points, 
-                  actions: item.actions + newAction.quantity,
-                  students: item.students + 1
-                }
+              ? { ...item, points: item.points + newAction.points, actions: item.actions + newAction.quantity, students: item.students + 1 }
               : item
           ).sort((a, b) => b.points - a.points));
         }
-
-        // Reset form
         setSelectedAction('');
         setQuantity(1);
         setEvidenceFile(null);
@@ -211,7 +239,6 @@ const App = () => {
     }
   };
 
-  // Get action icon component
   const getActionIcon = (actionId) => {
     const action = ecoActions.find(a => a.id === actionId);
     return action ? action.icon : Leaf;
@@ -232,20 +259,223 @@ const App = () => {
                 <p className="text-green-600">Eco-challenges for schools & students</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowLeaderboard(!showLeaderboard)}
-              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              {showLeaderboard ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              <span>{showLeaderboard ? 'Hide' : 'View'} School Rankings</span>
-            </button>
+            
+            <div className="flex items-center space-x-4">
+              {!isAdmin ? (
+                <button
+                  onClick={() => setShowLeaderboard(!showLeaderboard)}
+                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  {showLeaderboard ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <span>{showLeaderboard ? 'Hide' : 'View'} School Rankings</span>
+                </button>
+              ) : (
+                <div className="flex items-center space-x-2 bg-red-100 text-red-800 px-3 py-2 rounded-lg">
+                  <Settings className="h-4 w-4" />
+                  <span>Admin Mode</span>
+                  <button
+                    onClick={handleAdminLogout}
+                    className="ml-2 text-red-600 hover:text-red-800"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              
+              {/* Admin Login Button (only visible when not admin) */}
+              {!isAdmin && (
+                <div className="relative group">
+                  <button className="bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-700">
+                    <Key className="h-4 w-4" />
+                  </button>
+                  {/* Admin Login Form (popup) */}
+                  <div className="absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-lg p-4 z-50 hidden group-hover:block">
+                    <form onSubmit={handleAdminLogin} className="space-y-3">
+                      <h3 className="font-medium text-gray-900">Admin Login</h3>
+                      <input
+                        type="password"
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        placeholder="Enter admin password"
+                        className="w-full p-2 border border-gray-300 rounded"
+                        required
+                      />
+                      <button
+                        type="submit"
+                        className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+                      >
+                        Login
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Competition Info Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-blue-900">{currentCompetition.name}</h2>
+              <p className="text-blue-700 text-sm">
+                {currentCompetition.startDate} to {currentCompetition.endDate} • 
+                {currentCompetition.isActive ? ' 🟢 Active' : ' 🔴 Inactive'}
+              </p>
+            </div>
+            {isAdmin && (
+              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                Admin Controls Available
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Admin Dashboard (only visible when admin) */}
+        {isAdmin && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-purple-200 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+              <Settings className="h-6 w-6 text-purple-600 mr-2" />
+              Admin Dashboard
+            </h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* School Management */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-4 flex items-center">
+                  <School className="h-5 w-5 text-blue-600 mr-2" />
+                  School Management
+                </h3>
+                
+                {/* Add New School */}
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-700 mb-2">Add New School</h4>
+                  <form onSubmit={addSchoolRequest} className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newSchoolName}
+                      onChange={(e) => setNewSchoolName(e.target.value)}
+                      placeholder="Enter school name"
+                      className="flex-1 p-2 border border-gray-300 rounded"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-green-600 text-white p-2 rounded hover:bg-green-700"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </form>
+                </div>
+                
+                {/* Pending Schools */}
+                {pendingSchools.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-medium text-gray-700 mb-2">Pending Approvals ({pendingSchools.length})</h4>
+                    <div className="space-y-2">
+                      {pendingSchools.map((school, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                          <span className="text-yellow-800">{school}</span>
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={() => approveSchool(school)}
+                              className="bg-green-100 text-green-700 p-1 rounded hover:bg-green-200"
+                            >
+                              <UserCheck className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => rejectSchool(school)}
+                              className="bg-red-100 text-red-700 p-1 rounded hover:bg-red-200"
+                            >
+                              <UserX className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Approved Schools */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-2">Approved Schools ({approvedSchools.length})</h4>
+                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    {approvedSchools.map((school, index) => (
+                      <div key={index} className="text-sm bg-green-50 text-green-800 p-2 rounded">
+                        {school}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Competition Management */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="font-bold text-lg mb-4 flex items-center">
+                  <Award className="h-5 w-5 text-orange-600 mr-2" />
+                  Competition Management
+                </h3>
+                
+                {/* Create New Competition */}
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-700 mb-2">Start New Competition</h4>
+                  <form onSubmit={createNewCompetition} className="space-y-2">
+                    <input
+                      type="text"
+                      value={competitionName}
+                      onChange={(e) => setCompetitionName(e.target.value)}
+                      placeholder="Competition name"
+                      className="w-full p-2 border border-gray-300 rounded"
+                      required
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="date"
+                        value={competitionStart}
+                        onChange={(e) => setCompetitionStart(e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                        required
+                      />
+                      <input
+                        type="date"
+                        value={competitionEnd}
+                        onChange={(e) => setCompetitionEnd(e.target.value)}
+                        className="p-2 border border-gray-300 rounded"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+                    >
+                      Launch New Competition
+                    </button>
+                  </form>
+                </div>
+                
+                {/* Reset Controls */}
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-red-800 mb-2">Emergency Reset</h4>
+                  <p className="text-red-700 text-sm mb-2">Reset all competition data (use carefully!)</p>
+                  <button
+                    onClick={resetAllData}
+                    className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 flex items-center justify-center space-x-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span>Reset All Data</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rest of your existing UI components go here */}
         {/* Impact Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          {/* ... your existing impact stats code ... */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-green-100">
             <div className="flex items-center justify-between">
               <div>
@@ -255,7 +485,6 @@ const App = () => {
               <TrendingUp className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          
           <div className="bg-white rounded-xl p-6 shadow-sm border border-green-100">
             <div className="flex items-center justify-between">
               <div>
@@ -265,7 +494,6 @@ const App = () => {
               <Leaf className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          
           <div className="bg-white rounded-xl p-6 shadow-sm border border-green-100">
             <div className="flex items-center justify-between">
               <div>
@@ -275,7 +503,6 @@ const App = () => {
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          
           <div className="bg-white rounded-xl p-6 shadow-sm border border-green-100">
             <div className="flex items-center justify-between">
               <div>
@@ -285,7 +512,6 @@ const App = () => {
               <Users className="h-8 w-8 text-green-600" />
             </div>
           </div>
-          
           <div className="bg-white rounded-xl p-6 shadow-sm border border-green-100">
             <div className="flex items-center justify-between">
               <div>
@@ -330,8 +556,9 @@ const App = () => {
                   value={userSchool}
                   onChange={(e) => setUserSchool(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  disabled={isAdmin} // Admin can't submit actions
                 >
-                  {schools.map(school => (
+                  {approvedSchools.map(school => (
                     <option key={school} value={school}>
                       {school}
                     </option>
@@ -348,12 +575,12 @@ const App = () => {
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  disabled={isAdmin}
                 />
               </div>
 
-              {selectedAction && (
+              {selectedAction && !isAdmin && (
                 <>
-                  {/* Evidence Upload */}
                   <div className="border-2 border-dashed border-green-200 rounded-lg p-4">
                     <label className="block text-sm font-medium text-gray-700 mb-3">Evidence Upload</label>
                     <div className="flex space-x-4 mb-3">
@@ -418,7 +645,6 @@ const App = () => {
                     )}
                   </div>
 
-                  {/* Location Check-in */}
                   {ecoActions.find(a => a.id === selectedAction)?.requiresLocation && (
                     <div className="border border-green-200 rounded-lg p-4">
                       <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-3">
@@ -466,29 +692,31 @@ const App = () => {
                 </>
               )}
 
-              <button
-                type="submit"
-                disabled={
-                  !selectedAction || 
-                  quantity <= 0 || 
-                  !evidenceFile || 
-                  (ecoActions.find(a => a.id === selectedAction)?.requiresLocation && !gpsLocation) ||
-                  isProcessing
-                }
-                className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center space-x-2"
-              >
-                {isProcessing ? (
-                  <>
-                    <Clock className="h-5 w-5 animate-spin" />
-                    <span>Processing with AI...</span>
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-5 w-5" />
-                    <span>Submit for Verification</span>
-                  </>
-                )}
-              </button>
+              {!isAdmin && (
+                <button
+                  type="submit"
+                  disabled={
+                    !selectedAction || 
+                    quantity <= 0 || 
+                    !evidenceFile || 
+                    (ecoActions.find(a => a.id === selectedAction)?.requiresLocation && !gpsLocation) ||
+                    isProcessing
+                  }
+                  className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center space-x-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Clock className="h-5 w-5 animate-spin" />
+                      <span>Processing with AI...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-5 w-5" />
+                      <span>Submit for Verification</span>
+                    </>
+                  )}
+                </button>
+              )}
             </form>
           </div>
 
@@ -547,7 +775,7 @@ const App = () => {
         </div>
 
         {/* Leaderboard */}
-        {showLeaderboard && (
+        {showLeaderboard && !isAdmin && (
           <div className="mt-8 bg-white rounded-xl p-6 shadow-sm border border-green-100">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
               <School className="h-6 w-6 text-blue-500 mr-2" />
@@ -609,32 +837,34 @@ const App = () => {
         )}
 
         {/* How it Works */}
-        <div className="mt-12 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-8 text-white">
-          <h2 className="text-2xl font-bold mb-6">How School Challenges Work</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="bg-white bg-opacity-20 rounded-full p-4 inline-block mb-4">
-                <Camera className="h-8 w-8" />
+        {!isAdmin && (
+          <div className="mt-12 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-8 text-white">
+            <h2 className="text-2xl font-bold mb-6">How School Challenges Work</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="bg-white bg-opacity-20 rounded-full p-4 inline-block mb-4">
+                  <Camera className="h-8 w-8" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Photo/Video Evidence</h3>
+                <p className="text-green-100">Upload proof of your eco-actions. Our AI verifies authenticity and flags duplicates.</p>
               </div>
-              <h3 className="font-bold text-lg mb-2">Photo/Video Evidence</h3>
-              <p className="text-green-100">Upload proof of your eco-actions. Our AI verifies authenticity and flags duplicates.</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-white bg-opacity-20 rounded-full p-4 inline-block mb-4">
-                <Map className="h-8 w-8" />
+              <div className="text-center">
+                <div className="bg-white bg-opacity-20 rounded-full p-4 inline-block mb-4">
+                  <Map className="h-8 w-8" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Location Verification</h3>
+                <p className="text-green-100">Check-in at specific locations to confirm participation in campus events and activities.</p>
               </div>
-              <h3 className="font-bold text-lg mb-2">Location Verification</h3>
-              <p className="text-green-100">Check-in at specific locations to confirm participation in campus events and activities.</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-white bg-opacity-20 rounded-full p-4 inline-block mb-4">
-                <Award className="h-8 w-8" />
+              <div className="text-center">
+                <div className="bg-white bg-opacity-20 rounded-full p-4 inline-block mb-4">
+                  <Award className="h-8 w-8" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">School Competition</h3>
+                <p className="text-green-100">Compete with other schools to earn the top spot on our leaderboard and win eco-awards.</p>
               </div>
-              <h3 className="font-bold text-lg mb-2">School Competition</h3>
-              <p className="text-green-100">Compete with other schools to earn the top spot on our leaderboard and win eco-awards.</p>
             </div>
           </div>
-        </div>
+        )}
       </main>
 
       {/* Footer */}
@@ -655,4 +885,3 @@ const App = () => {
 };
 
 export default App;
-
